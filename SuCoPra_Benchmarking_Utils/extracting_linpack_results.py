@@ -7,13 +7,13 @@ Extracts values for wanted_fields of LINPACK runs.
 @param wanted_fields: list of data types you want (e. g. 'N' or 'Gflops')
 @return: List[Dict{ [wanted field]: string value for field}]
 """
-def extract_linpack_results (file_paths, wanted_fields):
+def extract_linpack_results (file_paths):
     file_contents = map(_read_from_linpack_file, file_paths)
     content = ''.join(file_contents)
     
     regex = r'=+\nT/V.*\n-+\n.*'
     blocks = re.findall(regex, content)
-    result = map(_extract_linpack_run(wanted_fields), blocks)
+    result = map(_extract_linpack_run, blocks)
     
     return list(result)
 
@@ -24,20 +24,20 @@ def _read_from_linpack_file (file_path):
     return content
 
 
-def _extract_linpack_run (wanted_fields):
-    def a (summary):
-        lines = summary.split('\n')
+def _extract_linpack_run (run_summary):
+    lines = run_summary.split('\n')
 
-        fields = lines[1].split()
-        values = lines[3].split()
+    fields = lines[1].split()
+    values = lines[3].split()
 
-        wanted_fields_indices = map(lambda f: (f, fields.index(f)), wanted_fields)
-        targeted_values = map(lambda fi: (fi[0], fi[1], values[fi[1]]), wanted_fields_indices)
+    if len(fields) != len(values):
+        raise Exception(f'field number is different from values number:'
+            + ' {len(fields)} fields, {len(values)} values')
 
-        result = {}
-        for value in targeted_values:
-            result[value[0]] = value[2]
+    field_value_pairs = zip(fields, values)
 
-        return result
+    result = {}
+    for value in field_value_pairs:
+        result[value[0]] = value[1]
 
-    return a
+    return result
